@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Forester</string>
+    <string name="title_activity_map">Map</string>
+
+    <string name="createUser">Create new user</string>
+    <string name="login">Login</string>
+    <string name="serialNumber">Serial number</string>
+    <string name="name">Name</string>
+    <string name="lastName">Last name</string>
+    <string name="save">Save</string>
+    <string name="abort">Abort</string>
+
+    <string name="addPointOfInterest">Add point of interest</string>
+    <string name="addSector">Add sector</string>
+
+    <string name="currentPosition">Current position</string>
+    <string name="gpsNotAvailable">GPS not available</string>
+    <string name="pointOfInterest">Point of interest</string>
+    <string name="latlng">latlng(%1$f, %2$f)</string>
+</resources>
