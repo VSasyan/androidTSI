@@ -30,35 +30,61 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
+import eu.ensg.forester.DAO.ForesterDAO;
+import eu.ensg.forester.POJO.ForesterPOJO;
+import eu.ensg.spatialite.SpatialiteDatabase;
+import eu.ensg.spatialite.SpatialiteOpenHelper;
 import eu.ensg.spatialite.geom.Point;
 import eu.ensg.spatialite.geom.XY;
 
 public class MapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-    private GoogleMap mMap;
-    private Integer int_serialNumber;
-    private TextView lblPosition;
-    private Marker mapMarker;
-    private Polygon mapPolygon;
-    private eu.ensg.spatialite.geom.Point currentPosition;
-    private eu.ensg.spatialite.geom.Polygon currentPolygon;
-    private boolean recording = false;
-    private Button save, abort;
-    private LinearLayout formRecording;
-    private ArrayList<Marker> pointsOfInterest = new ArrayList<Marker>();
+    protected SpatialiteDatabase database;
+    protected ForesterPOJO forester;
+    protected GoogleMap mMap;
+    protected TextView lblPosition;
+    protected Marker mapMarker;
+    protected Polygon mapPolygon;
+    protected eu.ensg.spatialite.geom.Point currentPosition;
+    protected eu.ensg.spatialite.geom.Polygon currentPolygon;
+    protected boolean recording = false;
+    protected Button save, abort;
+    protected LinearLayout formRecording;
+    protected ArrayList<Marker> pointsOfInterest = new ArrayList<Marker>();
+
+    // Define a listener that responds to location updates
+    public LocationListener locationListener = new LocationListener() {
+        public void onLocationChanged(Location location) {
+            // Called when a new location is found by the network location provider.
+            updateCurrent(new LatLng(location.getLatitude(), location.getLongitude()));
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+        public void onProviderEnabled(String provider) {}
+
+        public void onProviderDisabled(String provider) {}
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
 
+        // Init
+        initDatabase();
+
         // Get Intent
         Intent intent = getIntent();
-        int_serialNumber = Integer.parseInt(intent.getStringExtra(getString(R.string.serialNumber)));
-        Toast.makeText(MapActivity.this, int_serialNumber.toString(), Toast.LENGTH_SHORT).show();
+        String str_serialNumber = intent.getStringExtra(getString(R.string.serialNumber));
+        forester = new ForesterPOJO(0, str_serialNumber);
+        ForesterDAO dao = new ForesterDAO(database);
+        if (dao.read(forester) == null) {finish();}
+
+        Toast.makeText(MapActivity.this, forester.toString(), Toast.LENGTH_SHORT).show();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -134,6 +160,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         XY point = new XY(latlgn);
 
         if (currentPosition == null) {
+            currentPosition = new Point(point);
             mapMarker = mMap.addMarker(new MarkerOptions().position(latlgn));
             mapMarker.setTitle(getString(R.string.currentPosition));
             mapMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
@@ -155,19 +182,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
-    // Define a listener that responds to location updates
-    public LocationListener locationListener = new LocationListener() {
-        public void onLocationChanged(Location location) {
-            // Called when a new location is found by the network location provider.
-            updateCurrent(new LatLng(location.getLatitude(), location.getLongitude()));
+    public void showCurrentPolygon() {
+        if (mapPolygon != null) {
+            mapPolygon.remove();
+            mapPolygon = null;
         }
-
-        public void onStatusChanged(String provider, int status, Bundle extras) {}
-
-        public void onProviderEnabled(String provider) {}
-
-        public void onProviderDisabled(String provider) {}
-    };
+        PolygonOptions polygonOptions = new PolygonOptions().fillColor(Color.BLUE).strokeColor(Color.BLACK);
+        for (XY xy : currentPolygon.getCoordinates().getCoords()) {
+            polygonOptions.add(new Point(xy).toLatLng());
+        }
+        mapPolygon = mMap.addPolygon(polygonOptions);
+    }
 
     /**********************************************
      * MENU MANAGEMENT
@@ -205,18 +230,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         return false;
     }
 
-    public void showCurrentPolygon() {
-        if (mapPolygon != null) {
-            mapPolygon.remove();
-            mapPolygon = null;
-        }
-        PolygonOptions polygonOptions = new PolygonOptions().fillColor(Color.BLUE).strokeColor(Color.BLACK);
-        for (XY coord : currentPolygon.getCoordinates().getCoords()) {
-            polygonOptions.add(new LatLng(coord.getX(), coord.getY()));
-        }
-        mapPolygon = mMap.addPolygon(polygonOptions);
-    }
-
     /**********************************************
      * GETTER/SETTER
      **********************************************/
@@ -228,6 +241,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
     public boolean isRecording() {
         return this.recording;
+    }
+
+    private void initDatabase() {
+        try {
+            SpatialiteOpenHelper helper = new ForesterSpatialiteOpenHelper(this);
+            database = helper.getDatabase();
+        } catch (jsqlite.Exception | IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, getString(R.string.cannot_init_database), Toast.LENGTH_LONG).show();
+            System.exit(0);
+        }
     }
 
 }

@@ -9,8 +9,16 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.io.IOException;
+
+import eu.ensg.forester.DAO.ForesterDAO;
+import eu.ensg.forester.POJO.ForesterPOJO;
+import eu.ensg.spatialite.SpatialiteDatabase;
+import eu.ensg.spatialite.SpatialiteOpenHelper;
+
 public class CreateUserActivity extends AppCompatActivity {
 
+    protected SpatialiteDatabase database;
     protected EditText name, lastName, serialNumber;
     protected Button createUser;
 
@@ -18,6 +26,9 @@ public class CreateUserActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_user);
+
+        // Init DB
+        initDatabase();
 
         // Load GUI
         name = (EditText)findViewById(R.id.name);
@@ -28,16 +39,38 @@ public class CreateUserActivity extends AppCompatActivity {
         // Listener: createUSer
         createUser.setOnClickListener(new View.OnClickListener() {
             public void onClick(View arg0) {
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra(getString(R.string.serialNumber), serialNumber.getText().toString());
+                // Add in database
+                String str_name = name.getText().toString();
+                String str_lastName = lastName.getText().toString();
+                String str_serial = serialNumber.getText().toString();
+                ForesterPOJO forester = new ForesterPOJO(0, str_name, str_lastName, str_serial);
+                ForesterDAO dao = new ForesterDAO(database);
+                forester = dao.create(forester);
 
-                CharSequence text = name.getText() + " " + lastName.getText() + " " + serialNumber.getText();
-                Toast.makeText(CreateUserActivity.this, text, Toast.LENGTH_SHORT).show();
+                if (forester != null) {
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra(getString(R.string.serialNumber), serialNumber.getText().toString());
 
-                setResult(Activity.RESULT_OK, resultIntent);
-                finish();
+                    Toast.makeText(CreateUserActivity.this, forester.toString(), Toast.LENGTH_SHORT).show();
+
+                    setResult(Activity.RESULT_OK, resultIntent);
+                    finish();
+                } else {
+                    Toast.makeText(CreateUserActivity.this, getString(R.string.createUserFail), Toast.LENGTH_SHORT).show();
+                }
             }
         });
+    }
+
+    private void initDatabase() {
+        try {
+            SpatialiteOpenHelper helper = new ForesterSpatialiteOpenHelper(this);
+            database = helper.getDatabase();
+        } catch (jsqlite.Exception | IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, getString(R.string.cannot_init_database), Toast.LENGTH_LONG).show();
+            System.exit(0);
+        }
     }
 
 }

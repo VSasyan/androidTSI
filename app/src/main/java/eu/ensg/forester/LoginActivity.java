@@ -8,11 +8,20 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
+
+import java.io.IOException;
+
+import eu.ensg.forester.DAO.ForesterDAO;
+import eu.ensg.forester.POJO.ForesterPOJO;
+import eu.ensg.spatialite.SpatialiteDatabase;
+import eu.ensg.spatialite.SpatialiteOpenHelper;
 
 public class LoginActivity extends AppCompatActivity {
 
     static final int SERIAL_NUMBER_REQUEST = 1;
 
+    protected SpatialiteDatabase database;
     protected EditText serialNumber;
     protected Button login, createUser;
     protected SharedPreferences preferences;
@@ -21,6 +30,9 @@ public class LoginActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        // Init DB
+        initDatabase();
 
         // Init preferences
         preferences = getSharedPreferences("formPreferences", Context.MODE_PRIVATE);
@@ -48,15 +60,22 @@ public class LoginActivity extends AppCompatActivity {
                 // Load Form
                 String str_serialNumber = serialNumber.getText().toString();
 
-                // Save preferences
-                SharedPreferences.Editor editor = preferences.edit();
-                editor.putString("str_serialNumber", str_serialNumber);
-                editor.apply();
+                // data base request :
+                ForesterPOJO forester = new ForesterPOJO(0, str_serialNumber);
+                ForesterDAO dao = new ForesterDAO(database);
+                if (dao.read(forester) != null) {
+                    // Save preferences
+                    SharedPreferences.Editor editor = preferences.edit();
+                    editor.putString("str_serialNumber", str_serialNumber);
+                    editor.apply();
 
-                // Intent
-                Intent intent = new Intent(LoginActivity.this, MapActivity.class);
-                intent.putExtra(getString(R.string.serialNumber), str_serialNumber);
-                startActivity(intent);
+                    // Intent
+                    Intent intent = new Intent(LoginActivity.this, MapActivity.class);
+                    intent.putExtra(getString(R.string.serialNumber), str_serialNumber);
+                    startActivity(intent);
+                } else {
+                    Toast.makeText(LoginActivity.this, getString(R.string.serial_not_found), Toast.LENGTH_LONG).show();
+                }
             }
         });
     }
@@ -66,6 +85,17 @@ public class LoginActivity extends AppCompatActivity {
             if (resultCode == RESULT_OK) {
                 serialNumber.setText(data.getStringExtra(getString(R.string.serialNumber)));
             }
+        }
+    }
+
+    private void initDatabase() {
+        try {
+            SpatialiteOpenHelper helper = new ForesterSpatialiteOpenHelper(this);
+            database = helper.getDatabase();
+        } catch (jsqlite.Exception | IOException e) {
+            e.printStackTrace();
+            Toast.makeText(this, getString(R.string.cannot_init_database), Toast.LENGTH_LONG).show();
+            System.exit(0);
         }
     }
 }

@@ -13,6 +13,10 @@
     <string name="addPointOfInterest">Add point of interest</string>
     <string name="addSector">Add sector</string>
 
+    <string name="createUserFail">Fail to create user!</string>
+    <string name="createSuccess">User created!</string>
+    <string name="serial_not_found">Serial not found!</string>
+    <string name="cannot_init_database">Cannot initialize database!</string>
     <string name="currentPosition">Current position</string>
     <string name="gpsNotAvailable">GPS not available</string>
     <string name="pointOfInterest">Point of interest</string>
