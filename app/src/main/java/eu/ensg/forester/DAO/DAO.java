@@ -2,6 +2,7 @@ package eu.ensg.forester.DAO;
 
 import eu.ensg.forester.POJO.POJO;
 import eu.ensg.spatialite.SpatialiteDatabase;
+import eu.ensg.spatialite.geom.BadGeometryException;
 import jsqlite.*;
 
 /**
@@ -20,7 +21,7 @@ public abstract class DAO<P extends POJO> {
     }
 
     public abstract P create(P POJO);
-    public abstract P read(P POJO);
+    public abstract P read(P POJO) throws BadGeometryException;
     public abstract P update(P POJO);
     public abstract void delete(P POJO);
 }

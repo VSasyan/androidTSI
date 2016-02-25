@@ -1,13 +1,16 @@
 package eu.ensg.forester;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.Menu;
@@ -34,7 +37,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import eu.ensg.forester.DAO.ForesterDAO;
+import eu.ensg.forester.DAO.PolygonDAO;
 import eu.ensg.forester.POJO.ForesterPOJO;
+import eu.ensg.forester.POJO.PolygonPOJO;
 import eu.ensg.spatialite.SpatialiteDatabase;
 import eu.ensg.spatialite.SpatialiteOpenHelper;
 import eu.ensg.spatialite.geom.Point;
@@ -62,11 +67,14 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             updateCurrent(new LatLng(location.getLatitude(), location.getLongitude()));
         }
 
-        public void onStatusChanged(String provider, int status, Bundle extras) {}
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+        }
 
-        public void onProviderEnabled(String provider) {}
+        public void onProviderEnabled(String provider) {
+        }
 
-        public void onProviderDisabled(String provider) {}
+        public void onProviderDisabled(String provider) {
+        }
     };
 
     @Override
@@ -82,7 +90,9 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         String str_serialNumber = intent.getStringExtra(getString(R.string.serialNumber));
         forester = new ForesterPOJO(0, str_serialNumber);
         ForesterDAO dao = new ForesterDAO(database);
-        if (dao.read(forester) == null) {finish();}
+        if (dao.read(forester) == null) {
+            finish();
+        }
 
         Toast.makeText(MapActivity.this, forester.toString(), Toast.LENGTH_SHORT).show();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -90,28 +100,22 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         mapFragment.getMapAsync(this);
 
         // Load GUI
-        formRecording = (LinearLayout)findViewById(R.id.formRecording);
-        lblPosition = (TextView)findViewById(R.id.lblPosition);
-        abort = (Button)findViewById(R.id.abort);
-        save = (Button)findViewById(R.id.save);
+        formRecording = (LinearLayout) findViewById(R.id.formRecording);
+        lblPosition = (TextView) findViewById(R.id.lblPosition);
+        abort = (Button) findViewById(R.id.abort);
+        save = (Button) findViewById(R.id.save);
 
         // Listener: abort
         abort.setOnClickListener(new View.OnClickListener() {
             public void onClick(View arg0) {
-                setRecording(false);
-                mapPolygon.remove();
-                mapPolygon = null;
-                currentPolygon = null;
+                abortCurrentPolygon();
             }
         });
 
         // Listener: save
         save.setOnClickListener(new View.OnClickListener() {
             public void onClick(View arg0) {
-                setRecording(false);
-                mapPolygon.setFillColor(Color.GREEN);
-                mapPolygon.setStrokeColor(Color.BLUE);
-                Toast.makeText(MapActivity.this, ((Integer)mapPolygon.getPoints().size()).toString(), Toast.LENGTH_SHORT).show();
+                saveCurrentPolygon();
             }
         });
     }
@@ -153,45 +157,71 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         // Init the GPS
         LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(MapActivity.this, getString(R.string.gpsAccessDenied), Toast.LENGTH_SHORT).show();
+            return;
+        }
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
     }
 
     public void updateCurrent(LatLng latlgn) {
         XY point = new XY(latlgn);
 
-        if (currentPosition == null) {
-            currentPosition = new Point(point);
+        currentPosition = new Point(point);
+        lblPosition.setText(currentPosition.toString());
+        if (isRecording()) {updateCurrentPolygon();}
+
+        if (mapMarker == null) {
             mapMarker = mMap.addMarker(new MarkerOptions().position(latlgn));
             mapMarker.setTitle(getString(R.string.currentPosition));
             mapMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
             mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlgn, 14));
-            lblPosition.setText(currentPosition.toString());
         } else {
-            if (!currentPosition.getCoordinate().equals(point)) {
-                currentPosition = new Point(point);
-                lblPosition.setText(currentPosition.toString());
-
-                mapMarker.setPosition(latlgn);
-
-                if (isRecording()) {
-                    currentPolygon.addCoordinate(currentPosition.getCoordinate());
-                    showCurrentPolygon();
-                    Toast.makeText(MapActivity.this, ((Integer)mapPolygon.getPoints().size()).toString(), Toast.LENGTH_SHORT).show();
-                }
-            }
+            mapMarker.setPosition(latlgn);
         }
     }
 
-    public void showCurrentPolygon() {
+    public void initCurrentPolygon() {
+        currentPolygon = new eu.ensg.spatialite.geom.Polygon();
+        Toast.makeText(MapActivity.this, "addSector", Toast.LENGTH_SHORT).show();
+        currentPolygon.addCoordinate(new XY(2.587, 48.841));
+        currentPolygon.addCoordinate(new XY(2.586, 48.841));
+        currentPolygon.addCoordinate(new XY(2.586, 48.842));
+        updateCurrentPolygon();
+    }
+
+    public void updateCurrentPolygon() {
+        currentPolygon.addCoordinate(currentPosition.getCoordinate());
         if (mapPolygon != null) {
             mapPolygon.remove();
             mapPolygon = null;
         }
-        PolygonOptions polygonOptions = new PolygonOptions().fillColor(Color.BLUE).strokeColor(Color.BLACK);
+        PolygonOptions polygonOptions = new PolygonOptions();
         for (XY xy : currentPolygon.getCoordinates().getCoords()) {
             polygonOptions.add(new Point(xy).toLatLng());
         }
         mapPolygon = mMap.addPolygon(polygonOptions);
+        Toast.makeText(MapActivity.this, ((Integer)mapPolygon.getPoints().size()).toString(), Toast.LENGTH_SHORT).show();
+    }
+
+    public void saveCurrentPolygon() {
+        setRecording(false);
+        mapPolygon.setFillColor(Color.GREEN);
+
+        PolygonPOJO polygon = new PolygonPOJO(0, forester.getId(), "Mon polygon", "Ma description", currentPolygon);
+        PolygonDAO dao = new PolygonDAO(database);
+        if (dao.create(polygon) == null) {
+            Toast.makeText(MapActivity.this, getString(R.string.polygonCreateError), Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MapActivity.this, getString(R.string.polygonCreateSuccess), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void abortCurrentPolygon() {
+        setRecording(false);
+        mapPolygon.remove();
+        mapPolygon = null;
+        currentPolygon = null;
     }
 
     /**********************************************
@@ -217,10 +247,6 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
 
             case R.id.addSector:
                 if (mapMarker != null) {
-                    Toast.makeText(MapActivity.this, "addSector", Toast.LENGTH_SHORT).show();
-                    currentPolygon = new eu.ensg.spatialite.geom.Polygon();
-                    currentPolygon.addCoordinate(currentPosition.getCoordinate());
-                    this.showCurrentPolygon();
                     this.setRecording(true);
                 } else {
                     Toast.makeText(MapActivity.this, getString(R.string.gpsNotAvailable), Toast.LENGTH_SHORT).show();
@@ -235,7 +261,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
      **********************************************/
     public void setRecording(boolean recording) {
         this.recording = recording;
-        if (this.recording) {formRecording.setVisibility(View.VISIBLE);}
+        if (this.recording) {
+            initCurrentPolygon();
+            formRecording.setVisibility(View.VISIBLE);
+        }
         else {formRecording.setVisibility(View.INVISIBLE);}
     }
 

@@ -67,7 +67,6 @@ public class ForesterDAO extends DAO<ForesterPOJO> {
     @Override
     public void delete(ForesterPOJO POJO) {
         String sql = "DELETE FROM Forester WHERE ID = %1$d;";
-        //Callback cb;
         try {
             getDB().exec(String.format(sql, POJO.getId()), null);
         } catch (Exception e) {
