@@ -25,7 +25,7 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
     @Override
     public PolygonPOJO create(PolygonPOJO POJO) {
         try {
-            String sql = "INSERT INTO District (ForesterID, Name, Description, Area) VALUES (%1$d, '%2$s', '%3$s', '%4$s');";
+            String sql = "INSERT INTO District (ForesterID, Name, Description, Area) VALUES (%1$d, '%2$s', '%3$s', %4$s);";
             sql = String.format(sql, POJO.getForesterId(), POJO.getName(), POJO.getDescription(), POJO.getArea().toSpatialiteQuery(4326));
             getDB().exec(sql);
             int id = (int)getDB().last_insert_rowid();
@@ -44,14 +44,13 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
             Stmt stmt = getDB().prepare(sql);
             if (stmt.step()) {
                 int id = stmt.column_int(0);
-                String str_name = stmt.column_string(1);
-                int int_foresterId = stmt.column_int(2);
+                int int_foresterId = stmt.column_int(1);
+                String str_name = stmt.column_string(2);
                 String str_description = stmt.column_string(3);
-                Polygon pol_area = new Polygon();
-                pol_area.marshall(new StringBuilder(stmt.column_string(4)));
+                Polygon pol_area = Polygon.unMarshall(stmt.column_string(4));
                 return new PolygonPOJO(id, int_foresterId, str_name, str_description, pol_area);
             }
-        } catch (Exception | BadGeometryException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
@@ -60,7 +59,7 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
     @Override
     public PolygonPOJO update(PolygonPOJO POJO) {
         try {
-            String sql = "UPDATE District SET ForesterId = '%1$d', Name = '%2$s', Description = '%3$s', Area = '%4$s' WHERE id = %5$d";
+            String sql = "UPDATE District SET ForesterId = '%1$d', Name = '%2$s', Description = '%3$s', Area = %4$s WHERE id = %5$d";
             sql = String.format(sql, POJO.getForesterId(), POJO.getName(), POJO.getDescription(), POJO.getArea().toSpatialiteQuery(4326), POJO.getId());
             getDB().exec(sql);
         } catch (Exception | BadGeometryException e) {
