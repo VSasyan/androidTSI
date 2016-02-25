@@ -39,7 +39,7 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
     @Override
     public PolygonPOJO read(PolygonPOJO POJO) {
         try {
-            String sql = "SELECT * FROM District WHERE ID = '%1$d';";
+            String sql = "SELECT Id, ForesterID, Name, Description, ST_ASTEXT(Area) FROM District WHERE ID = %1$d;";
             sql = String.format(sql, POJO.getId());
             Stmt stmt = getDB().prepare(sql);
             if (stmt.step()) {
@@ -47,7 +47,8 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
                 int int_foresterId = stmt.column_int(1);
                 String str_name = stmt.column_string(2);
                 String str_description = stmt.column_string(3);
-                Polygon pol_area = Polygon.unMarshall(stmt.column_string(4));
+                String str_polygon = stmt.column_string(4);
+                Polygon pol_area = Polygon.unMarshall(str_polygon);
                 return new PolygonPOJO(id, int_foresterId, str_name, str_description, pol_area);
             }
         } catch (Exception e) {
@@ -69,12 +70,14 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
     }
 
     @Override
-    public void delete(PolygonPOJO POJO) {
+    public boolean delete(PolygonPOJO POJO) {
         try {
             String sql = "DELETE FROM District WHERE ID = %1$d;";
             getDB().exec(String.format(sql, POJO.getId()), null);
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
 }

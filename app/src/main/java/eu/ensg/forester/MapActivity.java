@@ -37,8 +37,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import eu.ensg.forester.DAO.ForesterDAO;
+import eu.ensg.forester.DAO.PointOfInterestDAO;
 import eu.ensg.forester.DAO.PolygonDAO;
 import eu.ensg.forester.POJO.ForesterPOJO;
+import eu.ensg.forester.POJO.PointOfInterestPOJO;
 import eu.ensg.forester.POJO.PolygonPOJO;
 import eu.ensg.spatialite.SpatialiteDatabase;
 import eu.ensg.spatialite.SpatialiteOpenHelper;
@@ -90,9 +92,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         String str_serialNumber = intent.getStringExtra(getString(R.string.serialNumber));
         forester = new ForesterPOJO(0, str_serialNumber);
         ForesterDAO dao = new ForesterDAO(database);
-        if (dao.read(forester) == null) {
-            finish();
-        }
+        forester = dao.read(forester);
+        if (forester == null) {finish();}
 
         Toast.makeText(MapActivity.this, forester.toString(), Toast.LENGTH_SHORT).show();
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -181,12 +182,25 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         }
     }
 
+    public  void saveCurrentPosition() {
+        //Toast.makeText(MapActivity.this, "addPointofInterest", Toast.LENGTH_SHORT).show();
+
+        Marker newMarker = mMap.addMarker(new MarkerOptions().position(currentPosition.toLatLng()));
+        newMarker.setTitle(getString(R.string.pointOfInterest));
+        newMarker.setSnippet(currentPosition.toString());
+        pointsOfInterest.add(newMarker);
+
+        PointOfInterestPOJO poi = new PointOfInterestPOJO(0, forester.getId(), "Mon poi", "Ma description", currentPosition);
+        PointOfInterestDAO dao = new PointOfInterestDAO(database);
+        if (dao.create(poi) == null) {
+            Toast.makeText(MapActivity.this, getString(R.string.poiCreateError), Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MapActivity.this, getString(R.string.poiCreateSuccess), Toast.LENGTH_SHORT).show();
+        }
+    }
+
     public void initCurrentPolygon() {
         currentPolygon = new eu.ensg.spatialite.geom.Polygon();
-        Toast.makeText(MapActivity.this, "addSector", Toast.LENGTH_SHORT).show();
-        currentPolygon.addCoordinate(new XY(2.587, 48.841));
-        currentPolygon.addCoordinate(new XY(2.586, 48.841));
-        currentPolygon.addCoordinate(new XY(2.586, 48.842));
         updateCurrentPolygon();
     }
 
@@ -238,11 +252,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
         switch (item.getItemId()) {
 
             case R.id.addPointofInterest:
-                Toast.makeText(MapActivity.this, "addPointofInterest", Toast.LENGTH_SHORT).show();
-                Marker newMarker = mMap.addMarker(new MarkerOptions().position(currentPosition.toLatLng()).draggable(true));
-                newMarker.setTitle(getString(R.string.pointOfInterest));
-                newMarker.setSnippet(currentPosition.toString());
-                pointsOfInterest.add(newMarker);
+                saveCurrentPosition();
                 return true;
 
             case R.id.addSector:

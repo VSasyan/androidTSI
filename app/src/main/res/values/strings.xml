@@ -15,6 +15,8 @@
 
     <string name="createUserFail">Fail to create user!</string>
     <string name="gpsAccessDenied">GPS access denied!</string>
+    <string name="poiCreateSuccess">Point of interest creation OK!</string>
+    <string name="poiCreateError">Point of interest creation failed!</string>
     <string name="polygonCreateSuccess">Polygon creation OK!</string>
     <string name="polygonCreateError">Polygon creation failed!</string>
     <string name="createSuccess">User created!</string>

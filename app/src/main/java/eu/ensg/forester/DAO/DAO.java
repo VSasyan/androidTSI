@@ -23,5 +23,5 @@ public abstract class DAO<P extends POJO> {
     public abstract P create(P POJO);
     public abstract P read(P POJO) throws BadGeometryException;
     public abstract P update(P POJO);
-    public abstract void delete(P POJO);
+    public abstract boolean delete(P POJO);
 }

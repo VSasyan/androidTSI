@@ -1,27 +1,24 @@
 package eu.ensg.forester.POJO;
 
+import eu.ensg.spatialite.geom.Point;
 import eu.ensg.spatialite.geom.Polygon;
+import jsqlite.*;
 
 /**
  * Created by vsasyan on 25/02/16.
  */
-public class PolygonPOJO extends POJO {
+public class PointOfInterestPOJO extends POJO {
 
     protected int foresterId;
     protected String name, description;
-    protected Polygon area;
+    protected Point position;
 
-    public PolygonPOJO(int id) {
-        super(id);
+    public Point getPosition() {
+        return position;
     }
 
-    public PolygonPOJO(int id, int foresterId, String name, String description, Polygon area) {
-        super(id);
-        if (area == null) {throw new RuntimeException("Area is null");}
-        this.foresterId = foresterId;
-        this.name = name;
-        this.description = description;
-        this.area = area;
+    public void setPosition(Point position) {
+        this.position = position;
     }
 
     public int getForesterId() {
@@ -37,7 +34,7 @@ public class PolygonPOJO extends POJO {
     }
 
     public void setName(String name) {
-        name = name;
+        this.name = name;
     }
 
     public String getDescription() {
@@ -48,22 +45,27 @@ public class PolygonPOJO extends POJO {
         this.description = description;
     }
 
-    public Polygon getArea() {
-        return area;
+    public PointOfInterestPOJO(int id) {
+        super(id);
     }
 
-    public void setArea(Polygon area) {
-        this.area = area;
+    public PointOfInterestPOJO(int id, int foresterId, String name, String description, Point position) {
+        super(id);
+        if (position == null) {throw new RuntimeException("Position is null");}
+        this.foresterId = foresterId;
+        this.name = name;
+        this.description = description;
+        this.position = position;
     }
 
     @Override
     public String toString() {
-        return "PolygonPOJO{" +
+        return "PointOfInterestPOJO{" +
                 "id=" + id +
+                ", foresterId=" + foresterId +
                 ", name='" + name + '\'' +
-                ", foresterId='" + foresterId + '\'' +
                 ", description='" + description + '\'' +
-                ", area=" + area +
+                ", position=" + position +
                 '}';
     }
 }

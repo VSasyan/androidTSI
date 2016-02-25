@@ -51,7 +51,7 @@ public class ForesterPOJO extends POJO {
     public String toString() {
         return "ForesterPOJO{" +
                 "ID='" + id + '\'' +
-                "name='" + name + '\'' +
+                ", name='" + name + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", serial='" + serial + '\'' +
                 '}';
