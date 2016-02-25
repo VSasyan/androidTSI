@@ -205,18 +205,17 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             XY xy = currentPosition.getCoordinate();
             String key = "AIzaSyB_aJha7D3ZAP3tHbdxGGy1m6gNgURs7Zs";
             String address = "https://maps.googleapis.com/maps/api/geocode/json?latlng=%1$s,%2$s&key=%3$s";
-            URL url = new URL(String.format(address, String.valueOf(xy.getX()), String.valueOf(xy.getY()), key));
+            URL url = new URL(String.format(address, String.valueOf(xy.getY()), String.valueOf(xy.getX()), key));
             String streetAddress = "";
 
             AsyncTask task = new HttpAsyncTask(url);
             task.execute();
             streetAddress = (String)task.get();
 
-            Marker newMarker = mMap.addMarker(new MarkerOptions().position(currentPosition.toLatLng()));
+            Marker newMarker = mMap.addMarker(new MarkerOptions().position(currentPosition.toLatLng()).draggable(true));
             newMarker.setTitle(getString(R.string.pointOfInterest));
             newMarker.setSnippet(streetAddress);
             pointsOfInterest.add(newMarker);
-            newMarker.setSnippet(getString(R.string.streetAddressGeocodingError));
 
             PointOfInterestPOJO poi = new PointOfInterestPOJO(0, forester.getId(), "Mon poi", newMarker.getSnippet(), currentPosition);
             PointOfInterestDAO dao = new PointOfInterestDAO(database);
