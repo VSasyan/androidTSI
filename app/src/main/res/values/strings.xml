@@ -19,6 +19,7 @@
     <string name="poiCreateError">Point of interest creation failed!</string>
     <string name="polygonCreateSuccess">Polygon creation OK!</string>
     <string name="polygonCreateError">Polygon creation failed!</string>
+    <string name="streetAddressGeocodingError">Street address geocoding error!</string>
     <string name="createSuccess">User created!</string>
     <string name="serial_not_found">Serial not found!</string>
     <string name="cannot_init_database">Cannot initialize database!</string>

@@ -9,7 +9,9 @@ import android.graphics.Typeface;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
@@ -22,6 +24,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.appdatasearch.GetRecentContextCall;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -33,9 +36,19 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+
+import eu.ensg.commons.io.WebServices;
 import eu.ensg.forester.DAO.ForesterDAO;
 import eu.ensg.forester.DAO.PointOfInterestDAO;
 import eu.ensg.forester.DAO.PolygonDAO;
@@ -83,6 +96,10 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
+                .permitAll().build();
+        StrictMode.setThreadPolicy(policy);
 
         // Init
         initDatabase();
@@ -183,19 +200,33 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     }
 
     public  void saveCurrentPosition() {
-        //Toast.makeText(MapActivity.this, "addPointofInterest", Toast.LENGTH_SHORT).show();
+        try {
+            // Geocoding
+            XY xy = currentPosition.getCoordinate();
+            String key = "AIzaSyB_aJha7D3ZAP3tHbdxGGy1m6gNgURs7Zs";
+            String address = "https://maps.googleapis.com/maps/api/geocode/json?latlng=%1$s,%2$s&key=%3$s";
+            URL url = new URL(String.format(address, String.valueOf(xy.getX()), String.valueOf(xy.getY()), key));
+            String streetAddress = "";
 
-        Marker newMarker = mMap.addMarker(new MarkerOptions().position(currentPosition.toLatLng()));
-        newMarker.setTitle(getString(R.string.pointOfInterest));
-        newMarker.setSnippet(currentPosition.toString());
-        pointsOfInterest.add(newMarker);
+            AsyncTask task = new HttpAsyncTask(url);
+            task.execute();
+            streetAddress = (String)task.get();
 
-        PointOfInterestPOJO poi = new PointOfInterestPOJO(0, forester.getId(), "Mon poi", "Ma description", currentPosition);
-        PointOfInterestDAO dao = new PointOfInterestDAO(database);
-        if (dao.create(poi) == null) {
-            Toast.makeText(MapActivity.this, getString(R.string.poiCreateError), Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(MapActivity.this, getString(R.string.poiCreateSuccess), Toast.LENGTH_SHORT).show();
+            Marker newMarker = mMap.addMarker(new MarkerOptions().position(currentPosition.toLatLng()));
+            newMarker.setTitle(getString(R.string.pointOfInterest));
+            newMarker.setSnippet(streetAddress);
+            pointsOfInterest.add(newMarker);
+            newMarker.setSnippet(getString(R.string.streetAddressGeocodingError));
+
+            PointOfInterestPOJO poi = new PointOfInterestPOJO(0, forester.getId(), "Mon poi", newMarker.getSnippet(), currentPosition);
+            PointOfInterestDAO dao = new PointOfInterestDAO(database);
+            if (dao.create(poi) == null) {
+                Toast.makeText(MapActivity.this, getString(R.string.poiCreateError), Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(MapActivity.this, getString(R.string.poiCreateSuccess), Toast.LENGTH_SHORT).show();
+            }
+        } catch (IOException | InterruptedException | ExecutionException e) {
+            e.printStackTrace();
         }
     }
 
