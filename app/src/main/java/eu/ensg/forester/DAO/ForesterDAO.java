@@ -51,6 +51,24 @@ public class ForesterDAO extends DAO<ForesterPOJO> {
         return null;
     }
 
+    public ForesterPOJO read(int id) {
+        try {
+            String sql = "SELECT * FROM Forester WHERE ID = '%1$s';";
+            sql = String.format(sql, id);
+            Stmt stmt = getDB().prepare(sql);
+            if (stmt.step()) {
+                //int id = stmt.column_int(0);
+                String str_name = stmt.column_string(1);
+                String str_lastName = stmt.column_string(2);
+                String str_serial = stmt.column_string(3);
+                return new ForesterPOJO(id, str_name, str_lastName, str_serial);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     @Override
     public ForesterPOJO update(ForesterPOJO POJO) {
         try {

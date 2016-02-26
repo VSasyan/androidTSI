@@ -13,6 +13,8 @@
     <string name="addPointOfInterest">Add point of interest</string>
     <string name="addSector">Add sector</string>
 
+    <string name="geocoding">Geocoding</string>
+    <string name="loading">Loading. Please wait&#8230;</string>
     <string name="createUserFail">Fail to create user!</string>
     <string name="gpsAccessDenied">GPS access denied!</string>
     <string name="poiCreateSuccess">Point of interest creation OK!</string>

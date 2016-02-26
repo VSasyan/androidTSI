@@ -16,6 +16,7 @@ import eu.ensg.forester.DAO.ForesterDAO;
 import eu.ensg.forester.POJO.ForesterPOJO;
 import eu.ensg.spatialite.SpatialiteDatabase;
 import eu.ensg.spatialite.SpatialiteOpenHelper;
+import jsqlite.*;
 
 public class LoginActivity extends AppCompatActivity {
 

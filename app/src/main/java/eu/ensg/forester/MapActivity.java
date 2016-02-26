@@ -1,6 +1,7 @@
 package eu.ensg.forester;
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -46,6 +47,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import eu.ensg.commons.io.WebServices;
@@ -74,6 +76,7 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
     protected Button save, abort;
     protected LinearLayout formRecording;
     protected ArrayList<Marker> pointsOfInterest = new ArrayList<Marker>();
+    protected ProgressDialog dialog;
 
     // Define a listener that responds to location updates
     public LocationListener locationListener = new LocationListener() {
@@ -180,6 +183,41 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             return;
         }
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+
+        // Load previous data
+        loadPreviousData();
+    }
+
+    public void loadPreviousData() {
+        // The polygons
+        PolygonDAO polygonDAO = new PolygonDAO(database);
+        List<PolygonPOJO> list1 = polygonDAO.getAll();
+        for (PolygonPOJO p : list1) {
+            PolygonOptions options = new PolygonOptions();
+            for (XY xy : p.getArea().getCoordinates().getCoords()) {
+                options.add(new Point(xy).toLatLng());
+            }
+            options.fillColor(Color.GREEN);
+            options.strokeColor(Color.BLUE);
+            mMap.addPolygon(options);
+        }
+
+        // The POI
+        PointOfInterestDAO poiDAO = new PointOfInterestDAO(database);
+        List<PointOfInterestPOJO> list2 = poiDAO.getAll();
+        ForesterDAO foresterDAO = new ForesterDAO(database);
+        for (PointOfInterestPOJO p : list2) {
+            MarkerOptions options = new MarkerOptions().position(p.getPosition().toLatLng());
+            ForesterPOJO foresterPOJO = foresterDAO.read(p.getForesterId());
+            if (foresterPOJO != null) {
+                options.title(foresterPOJO.getName() + " " + foresterPOJO.getLastName());
+            } else {
+                options.title(String.valueOf(p.getForesterId()));
+            }
+            options.snippet(p.getPosition() + " " + p.getDescription());
+            options.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+            mMap.addMarker(options);
+        }
     }
 
     public void updateCurrent(LatLng latlgn) {
@@ -208,7 +246,8 @@ public class MapActivity extends AppCompatActivity implements OnMapReadyCallback
             URL url = new URL(String.format(address, String.valueOf(xy.getY()), String.valueOf(xy.getX()), key));
             String streetAddress = "";
 
-            AsyncTask task = new HttpAsyncTask(url);
+            dialog = new ProgressDialog(MapActivity.this);
+            AsyncTask task = new HttpAsyncTask(MapActivity.this, dialog, url);
             task.execute();
             streetAddress = (String)task.get();
 

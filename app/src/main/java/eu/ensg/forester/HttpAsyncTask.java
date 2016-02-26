@@ -1,7 +1,8 @@
 package eu.ensg.forester;
 
+import android.app.ProgressDialog;
+import android.content.Context;
 import android.os.AsyncTask;
-import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -13,26 +14,30 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import eu.ensg.commons.io.WebServices;
-import eu.ensg.forester.DAO.PointOfInterestDAO;
-import eu.ensg.forester.POJO.PointOfInterestPOJO;
-import eu.ensg.spatialite.geom.XY;
 
 /**
  * Created by vsasyan on 25/02/16.
  */
 public class HttpAsyncTask extends AsyncTask<Object, Void, String> {
 
-    protected URL url;
     protected String streetAddress = "";
+    protected Context context;
+    protected URL url;
+    protected ProgressDialog dialog;
 
-    public HttpAsyncTask(URL url) {
+    public HttpAsyncTask(Context context, ProgressDialog dialog, URL url) {
+        this.context = context;
+        this.dialog = dialog;
         this.url = url;
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
-        //Toast.makeText(getApplicationContext(), "Geocoding...", Toast.LENGTH_LONG).show();
+        dialog.setTitle(context.getString(R.string.geocoding));
+        dialog.setMessage(context.getString(R.string.loading));
+        dialog.setIndeterminate(true);
+        dialog.show();
     }
 
     @Override
@@ -62,5 +67,6 @@ public class HttpAsyncTask extends AsyncTask<Object, Void, String> {
     @Override
     protected void onPostExecute(String o) {
         super.onPostExecute(o);
+        if (dialog.isShowing()) {dialog.dismiss();}
     }
 }

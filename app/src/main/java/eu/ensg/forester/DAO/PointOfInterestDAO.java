@@ -1,10 +1,14 @@
 package eu.ensg.forester.DAO;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import eu.ensg.forester.POJO.PointOfInterestPOJO;
 import eu.ensg.forester.POJO.PolygonPOJO;
 import eu.ensg.spatialite.SpatialiteDatabase;
 import eu.ensg.spatialite.geom.BadGeometryException;
 import eu.ensg.spatialite.geom.Point;
+import eu.ensg.spatialite.geom.Polygon;
 import jsqlite.*;
 import jsqlite.Exception;
 
@@ -34,6 +38,26 @@ public class PointOfInterestDAO extends DAO<PointOfInterestPOJO> {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public List<PointOfInterestPOJO> getAll() {
+        List<PointOfInterestPOJO> list = new ArrayList<>();
+        try {
+            String sql = "SELECT Id, ForesterID, Name, Description, ST_ASTEXT(position) FROM PointOfInterest WHERE 1;";
+            Stmt stmt = getDB().prepare(sql);
+            while (stmt.step()) {
+                int id = stmt.column_int(0);
+                int int_foresterId = stmt.column_int(1);
+                String str_name = stmt.column_string(2);
+                String str_description = stmt.column_string(3);
+                String str_position = stmt.column_string(4);
+                Point poi_position = Point.unMarshall(str_position);
+                list.add(new PointOfInterestPOJO(id, int_foresterId, str_name, str_description, poi_position));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     @Override

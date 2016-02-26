@@ -1,6 +1,10 @@
 package eu.ensg.forester.DAO;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import eu.ensg.forester.POJO.ForesterPOJO;
+import eu.ensg.forester.POJO.POJO;
 import eu.ensg.forester.POJO.PolygonPOJO;
 import eu.ensg.spatialite.SpatialiteDatabase;
 import eu.ensg.spatialite.geom.BadGeometryException;
@@ -34,6 +38,26 @@ public class PolygonDAO extends DAO<PolygonPOJO> {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public List<PolygonPOJO> getAll() {
+        List<PolygonPOJO> list = new ArrayList<>();
+        try {
+            String sql = "SELECT Id, ForesterID, Name, Description, ST_ASTEXT(Area) FROM District WHERE 1;";
+            Stmt stmt = getDB().prepare(sql);
+            while (stmt.step()) {
+                int id = stmt.column_int(0);
+                int int_foresterId = stmt.column_int(1);
+                String str_name = stmt.column_string(2);
+                String str_description = stmt.column_string(3);
+                String str_polygon = stmt.column_string(4);
+                Polygon pol_area = Polygon.unMarshall(str_polygon);
+                list.add(new PolygonPOJO(id, int_foresterId, str_name, str_description, pol_area));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     @Override
